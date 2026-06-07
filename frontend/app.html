@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VoteChain — Decentralized Governance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+  <script src="app.js" defer></script>
+  <style>
+    /* ── Variables ── */
+    :root {
+      --bg:        #eef1f7;
+      --surface:   #ffffff;
+      --border:    #dde4ef;
+      --border-h:  #c3ccda;
+
+      --navy:      #0f1f38;
+      --blue:      #2b5ce6;
+      --blue-lt:   #eef3ff;
+
+      --text:      #0f1f38;
+      --text-dim:  #4e6079;
+      --text-mt:   #96a8bf;
+
+      --green:     #059669;
+      --green-lt:  #ecfdf5;
+      --red:       #dc2626;
+      --red-lt:    #fef2f2;
+      --amber:     #d97706;
+      --amber-lt:  #fffbeb;
+
+      --shadow-sm: 0 1px 3px rgba(15,31,56,0.06), 0 1px 2px rgba(15,31,56,0.04);
+      --shadow:    0 4px 20px rgba(15,31,56,0.09), 0 1px 4px rgba(15,31,56,0.05);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    /* ── Body ── */
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Page ── */
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 5rem;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1.75rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3rem;
+    }
+
+    .logo { display: flex; align-items: center; gap: 0.75rem; }
+
+    .logo-mark {
+      width: 36px; height: 36px;
+      background: var(--navy);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 800;
+      letter-spacing: -0.01em; color: #ffffff;
+    }
+
+    .logo-name {
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--navy); letter-spacing: -0.01em;
+    }
+    .logo-name em { color: var(--blue); font-style: normal; }
+
+    .wallet-area { display: flex; align-items: center; gap: 0.75rem; }
+
+    #wallet-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem; color: var(--text-dim);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 0.38rem 0.875rem;
+      border-radius: 100px;
+      display: none;
+    }
+    #wallet-pill.show { display: block; }
+
+    #connect-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600; font-size: 0.82rem;
+      color: #ffffff; background: var(--navy);
+      border: none; padding: 0.58rem 1.2rem;
+      border-radius: 8px; cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    #connect-btn:hover         { background: #1a3255; box-shadow: var(--shadow); }
+    #connect-btn.connected     { background: var(--green-lt); color: var(--green);
+                                  border: 1px solid rgba(5,150,105,0.25); }
+    #connect-btn:disabled      { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── Hero ── */
+    .hero { margin-bottom: 2.25rem; }
+
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 0.45rem;
+      font-size: 0.73rem; font-weight: 600; color: var(--blue);
+      background: var(--blue-lt);
+      border: 1px solid rgba(43,92,230,0.18);
+      padding: 0.28rem 0.75rem; border-radius: 100px;
+      margin-bottom: 1.1rem;
+    }
+    .hero-pill-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--blue);
+      animation: blink 2.5s ease-in-out infinite;
+    }
+
+    .hero-title {
+      font-size: clamp(1.9rem, 5vw, 2.85rem);
+      font-weight: 800; color: var(--navy);
+      line-height: 1.15; letter-spacing: -0.03em;
+      margin-bottom: 0.875rem;
+    }
+
+    .hero-sub {
+      font-size: 0.92rem; color: var(--text-dim);
+      line-height: 1.75; max-width: 400px;
+    }
+
+    /* ── Stats ── */
+    .stats-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1rem; margin-bottom: 2rem;
+    }
+
+    .stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-lbl {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--text-mt); margin-bottom: 0.375rem;
+    }
+
+    .stat-val {
+      font-size: 1.65rem; font-weight: 800;
+      color: var(--navy); letter-spacing: -0.025em;
+      transition: all 0.4s;
+    }
+    .stat-val.sm       { font-size: 0.9rem; font-weight: 700; }
+    .stat-val.s-open   { color: var(--green); }
+    .stat-val.s-voted  { color: var(--amber); }
+
+    /* ── Status banner ── */
+    #status-msg {
+      display: none;
+      font-size: 0.83rem; font-weight: 500;
+      padding: 0.85rem 1.1rem;
+      border-radius: 8px;
+      border-left: 3px solid;
+      margin-bottom: 1.75rem;
+      line-height: 1.55;
+    }
+    #status-msg.info    { border-color: var(--blue);  background: var(--blue-lt);  color: #1d4ed8; }
+    #status-msg.success { border-color: var(--green); background: var(--green-lt); color: var(--green); }
+    #status-msg.error   { border-color: var(--red);   background: var(--red-lt);   color: var(--red); }
+    #status-msg.pending { border-color: var(--amber); background: var(--amber-lt); color: var(--amber); }
+
+    /* ── Section head ── */
+    .sec-head {
+      display: flex; align-items: center; gap: 0.875rem;
+      margin-bottom: 1rem;
+    }
+    .sec-lbl {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-mt); white-space: nowrap;
+    }
+    .sec-line { flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Add Candidate panel ───────────────────────────────────── */
+    /*
+     * NEW — exposes the contract's public addCandidate(string) function.
+     * Collapsed by default; toggle with the chevron button.
+     */
+    .add-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .add-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .add-panel-header:hover { background: #f8f9fc; }
+
+    .add-panel-title {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 0.82rem; font-weight: 700;
+      color: var(--text-dim); letter-spacing: 0.01em;
+    }
+    .add-panel-title .icon {
+      width: 22px; height: 22px;
+      background: var(--blue-lt);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; color: var(--blue);
+    }
+
+    .chevron {
+      font-size: 0.75rem; color: var(--text-mt);
+      transition: transform 0.25s;
+    }
+    .add-panel.open .chevron { transform: rotate(180deg); }
+
+    .add-panel-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      padding: 0 1.25rem;
+    }
+    .add-panel.open .add-panel-body {
+      max-height: 120px;
+      padding: 0 1.25rem 1.25rem;
+    }
+
+    .add-row {
+      display: flex; gap: 0.75rem; align-items: center;
+      padding-top: 0.875rem;
+      border-top: 1px solid var(--border);
+    }
+
+    #new-candidate-input {
+      flex: 1;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 500;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.58rem 0.875rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #new-candidate-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(43,92,230,0.1);
+    }
+    #new-candidate-input::placeholder { color: var(--text-mt); }
+
+    #add-candidate-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600; font-size: 0.8rem;
+      color: #ffffff; background: var(--blue);
+      border: none; padding: 0.58rem 1.1rem;
+      border-radius: 8px; cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.15s;
+    }
+    #add-candidate-btn:hover:not(:disabled) { background: #1a4bcc; transform: translateY(-1px); }
+    #add-candidate-btn:disabled             { opacity: 0.45; cursor: not-allowed; }
+
+    .add-panel-note {
+      font-size: 0.71rem; color: var(--text-mt);
+      margin-top: 0.6rem; line-height: 1.5;
+    }
+
+    /* ── Candidate cards ── */
+    #candidates { display: grid; gap: 0.875rem; }
+
+    .c-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.375rem 1.5rem 1.25rem;
+      position: relative; overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      opacity: 0; transform: translateY(10px);
+      transition: opacity 0.35s ease, transform 0.35s ease,
+                  border-color 0.2s, box-shadow 0.2s;
+    }
+    .c-card.in         { opacity: 1; transform: translateY(0); }
+    .c-card:hover      { border-color: var(--border-h); box-shadow: var(--shadow); }
+
+    /* Accent strip */
+    .c-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+      background: var(--ac, var(--blue));
+      border-radius: 12px 0 0 12px;
+    }
+
+    /* Top row: rank | meta | button */
+    .c-top {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      align-items: center;
+      gap: 1rem; margin-bottom: 1.125rem;
+      padding-left: 0.25rem;
+    }
+
+    .c-rank {
+      font-size: 0.7rem; font-weight: 600;
+      color: var(--text-mt); text-align: center;
+    }
+
+    .c-meta { display: flex; align-items: center; gap: 0.875rem; }
+
+    /* Round avatar */
+    .c-avatar {
+      width: 44px; height: 44px; flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--ac-dim, var(--blue-lt));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--ac, var(--blue));
+      border: 1.5px solid rgba(0,0,0,0.06);
+    }
+
+    .c-name {
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--navy); letter-spacing: -0.01em;
+    }
+    .c-votes {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; color: var(--text-mt);
+      margin-top: 0.15rem; font-weight: 500;
+    }
+
+    /* Vote button */
+    .vote-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 600; font-size: 0.79rem;
+      color: #ffffff; background: var(--navy);
+      border: none; padding: 0.52rem 1.05rem;
+      border-radius: 7px; cursor: pointer;
+      display: flex; align-items: center; gap: 0.4rem;
+      transition: background 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+    .vote-btn:hover:not(:disabled)   { background: #1a3255; transform: translateY(-1px); }
+    .vote-btn:active:not(:disabled)  { transform: translateY(0); }
+    .vote-btn:disabled               { opacity: 0.38; cursor: not-allowed; }
+    .vote-btn.voted {
+      background: transparent;
+      border: 1.5px solid rgba(5,150,105,0.3);
+      color: var(--green);
+    }
+    .vote-btn.loading { opacity: 0.6; pointer-events: none; }
+
+    .btn-arrow { font-size: 0.8rem; transition: transform 0.15s; }
+    .vote-btn:hover:not(:disabled) .btn-arrow { transform: translateX(2px); }
+
+    /* Bar row */
+    .c-bar-row {
+      display: flex; align-items: center;
+      gap: 0.875rem;
+      padding-left: calc(28px + 1rem + 0.25rem);
+    }
+
+    .bar-track {
+      flex: 1; height: 5px;
+      background: #edf0f5;
+      border-radius: 100px; overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 100px;
+      width: var(--pct, 0%);
+      background: var(--ac, var(--blue));
+      transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .bar-pct {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem; font-weight: 500;
+      color: var(--text-mt); min-width: 42px; text-align: right;
+    }
+
+    /* ── Placeholder ── */
+    #placeholder {
+      padding: 3rem 1.5rem; text-align: center;
+      border: 1.5px dashed var(--border);
+      border-radius: 12px;
+      font-size: 0.875rem; color: var(--text-mt); line-height: 1.9;
+    }
+    #placeholder small { font-size: 0.78rem; display: block; }
+
+    /* ── Live badge ───────────────────────────────────────────── */
+    /*
+     * NEW — appears next to the Candidates section label once the
+     * votedEvent subscription is active (set by subscribeToVotedEvent).
+     */
+    .live-badge {
+      display: none;                /* hidden until wallet connected */
+      align-items: center; gap: 0.35rem;
+      font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--green);
+      background: var(--green-lt);
+      border: 1px solid rgba(5,150,105,0.2);
+      padding: 0.18rem 0.6rem; border-radius: 100px;
+    }
+    .live-badge.show { display: flex; }
+    .live-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--green);
+      animation: blink 1.8s ease-in-out infinite;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 4rem; padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 0.75rem;
+    }
+    .footer-addr {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.68rem; color: var(--text-mt);
+    }
+    .footer-addr span { color: var(--text-dim); }
+
+    /* ── Network badge in footer ─────────────────────────────── */
+    /*
+     * NEW — shows the detected network name (populated by validateNetwork).
+     * Was previously hardcoded to "Ethereum Network".
+     */
+    .net-badge {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.72rem; font-weight: 600; color: var(--green);
+      background: var(--green-lt);
+      border: 1px solid rgba(5,150,105,0.2);
+      padding: 0.28rem 0.75rem; border-radius: 100px;
+    }
+    .net-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    /* ── Shared animations ── */
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* ── Confetti ── */
+    #confetti-layer { position: fixed; inset: 0; pointer-events: none; z-index: 999; overflow: hidden; }
+    .confetti {
+      position: absolute; top: -14px;
+      width: 8px; height: 8px; opacity: 0;
+      animation: fall var(--dur, 2.5s) var(--delay, 0s) ease-in forwards;
+    }
+    @keyframes fall {
+      0%   { opacity: 1; transform: translateY(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(105vh) rotate(600deg); }
+    }
+
+    /* ── Spinner ── */
+    .spin { display: inline-block; animation: spin 0.8s linear infinite; font-style: normal; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Responsive ── */
+    @media (max-width: 580px) {
+      header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+      .hero-title { font-size: 1.9rem; }
+      .stats-strip { grid-template-columns: 1fr 1fr; }
+      .stats-strip .stat:last-child { grid-column: 1/-1; }
+      .c-top { grid-template-columns: 28px 1fr; }
+      .c-top .vote-btn { display: none; }
+      .c-bar-row { padding-left: 0; }
+      .add-row { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-mark">VC</div>
+      <div class="logo-name">Vote<em>Chain</em></div>
+    </div>
+    <div class="wallet-area">
+      <div id="wallet-pill"></div>
+      <button id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-pill">
+      <span class="hero-pill-dot"></span>
+      Governance Protocol v1.0
+    </div>
+    <h1 class="hero-title">Decentralized<br>Community Voting</h1>
+    <p class="hero-sub">
+      Cast your vote on-chain. Every ballot is immutable,
+      transparent, and verifiable by anyone.
+    </p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-strip">
+    <div class="stat">
+      <div class="stat-lbl">Total Votes</div>
+      <!-- Animated by animateCounter() -->
+      <div class="stat-val" id="stat-total">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Candidates</div>
+      <!--
+        NEW: was hardcoded to "3". Now updated dynamically by
+        loadCandidates() after reading candidatesCount() from the contract.
+      -->
+      <div class="stat-val" id="stat-candidates">—</div>
+    </div>
+    <div class="stat">
+      <div class="stat-lbl">Status</div>
+      <div class="stat-val sm s-open" id="stat-status">Active</div>
+    </div>
+  </div>
+
+  <!-- Status message -->
+  <div id="status-msg"></div>
+
+  <!--
+    ── Add Candidate Panel ────────────────────────────────────────
+    NEW: UI for the contract's public addCandidate(string _name) function.
+    The panel collapses by default to keep the voting experience clean.
+    Note: the contract has no access control on addCandidate — in production
+    you should add an onlyOwner modifier or similar guard.
+  -->
+  <div class="add-panel" id="add-panel">
+    <div class="add-panel-header" onclick="toggleAddPanel()">
+      <div class="add-panel-title">
+        <span class="icon">＋</span>
+        Add a Candidate
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="add-panel-body">
+      <div class="add-row">
+        <input
+          type="text"
+          id="new-candidate-input"
+          placeholder="Candidate name…"
+          maxlength="64"
+          onkeydown="if(event.key==='Enter') addCandidate()"
+        />
+        <button id="add-candidate-btn" onclick="addCandidate()">Add Candidate</button>
+      </div>
+      <p class="add-panel-note">
+        Calls <code>addCandidate(string)</code> on-chain. Requires a connected wallet and gas.
+        Each submission creates a new immutable candidate entry in the contract.
+      </p>
+    </div>
+  </div>
+
+  <!-- Candidates section header -->
+  <div class="sec-head">
+    <span class="sec-lbl">Candidates</span>
+    <!--
+      NEW: Live badge — shown once the votedEvent subscription is active.
+      The badge signals to users that vote counts update in real-time
+      without needing a manual refresh.
+    -->
+    <span class="live-badge" id="live-badge">
+      <span class="live-dot"></span>
+      Live
+    </span>
+    <div class="sec-line"></div>
+  </div>
+
+  <div id="candidates">
+    <div id="placeholder">
+      Connect your wallet to load candidates
+      <small>Requires MetaMask or a compatible Web3 wallet</small>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-addr">
+      Contract &nbsp;<span id="footer-addr">0x0000…0000</span>
+    </div>
+    <!--
+      NEW: net-badge-name is now dynamically set by validateNetwork()
+      to show the actual detected network name instead of a hardcoded label.
+    -->
+    <div class="net-badge">
+      <div class="net-dot"></div>
+      <span id="net-badge-name">Ethereum Network</span>
+    </div>
+  </footer>
+
+</div>
+
+<div id="confetti-layer"></div>
+
+<script>
+  /* ── Add-panel toggle (inline; tiny enough not to warrant app.js) ── */
+  function toggleAddPanel() {
+    document.getElementById("add-panel").classList.toggle("open");
+  }
+
+  /*
+   * NEW: called by subscribeToVotedEvent() in app.js once the
+   * WebSocket / event subscription is established, to show the
+   * LIVE badge next to the Candidates heading.
+   */
+  function showLiveBadge() {
+    const badge = document.getElementById("live-badge");
+    if (badge) badge.classList.add("show");
+  }
+</script>
+
+</body>
+</html>

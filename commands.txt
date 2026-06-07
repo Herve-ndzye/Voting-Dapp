@@ -1,0 +1,11 @@
+//migrate 
+truffle migrate --network development --reset
+
+//initialise 
+truffle init
+
+//compile 
+truffle compile
+
+//create contract
+truffle create contract contract_name
